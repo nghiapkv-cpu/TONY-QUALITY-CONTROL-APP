@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Folk Games</title>
+<style>
+:root{--bg:#f6efe2;--ink:#2b2118;--card:#fffaf0;--accent:#b5472a;--accent2:#2f6b4f;--line:#d9c9a8;--cell:#f0e1bf}
+@media(prefers-color-scheme:dark){:root{--bg:#1d1812;--ink:#f1e8d6;--card:#2a231a;--accent:#e0714f;--accent2:#6bbd96;--line:#4a3f2d;--cell:#3a3124}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+h1{font-size:1.2rem;margin:0}
+main{max-width:760px;margin:0 auto;padding:16px}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.status{font-weight:600;min-height:1.5em;margin:8px 0}
+.rules{font-size:.9rem;opacity:.85}
+/* O an quan */
+#oaq{display:grid;grid-template-columns:1.1fr repeat(5,1fr) 1.1fr;grid-template-rows:90px 90px;gap:4px;margin:12px 0}
+.oc{background:var(--cell);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;position:relative;padding:2px;min-width:0}
+.oc.q{border-radius:45px}
+.oc.mine{cursor:pointer}
+.oc.mine:hover{border-color:var(--accent)}
+.oc.sel{outline:3px solid var(--accent)}
+.oc.hot{background:#f3c98a}
+.oc .n{font-size:1.1rem}
+.oc .seeds{font-size:10px;line-height:1.05;word-break:break-all;text-align:center;max-height:36px;overflow:hidden;color:var(--accent2)}
+.oc .m{color:var(--accent);font-size:1.2rem}
+.q0{grid-column:1;grid-row:1/3}.q6{grid-column:7;grid-row:1/3}
+.dir{display:flex;gap:8px;align-items:center}
+/* caro */
+#caro{display:grid;gap:0;margin:12px auto;width:min(100%,520px);aspect-ratio:1;background:var(--cell);border:1px solid var(--line)}
+#caro button{border:1px solid var(--line);border-radius:0;padding:0;font-size:min(3.2vw,17px);font-weight:700;background:transparent;line-height:1}
+#caro .x{color:var(--accent)}#caro .o{color:var(--accent2)}#caro .last{background:#f3c98a55}
+/* rps */
+.rps{display:flex;gap:12px;justify-content:center;margin:12px 0}
+.rps button{font-size:2.4rem;padding:12px 20px}
+.big{font-size:3rem;text-align:center}
+</style>
+</head>
+<body>
+<header><h1 id="title"></h1><button id="lang"></button></header>
+<main>
+<nav id="nav"></nav>
+<section id="g-oaq" class="card"></section>
+<section id="g-caro" class="card" hidden></section>
+<section id="g-rps" class="card" hidden></section>
+</main>
+<script>
+const T={
+ en:{title:"Folk Games",games:["Ô ăn quan","Cờ caro","Oẳn tù tì"],
+  oaqRules:"Traditional Vietnamese sowing game. You own the bottom row. Pick a square, choose a direction, and sow seeds one by one. After the last seed: if a filled square follows, keep sowing from it; if an empty square is followed by a filled one, capture it. Mandarin (big) squares are worth 10. The game ends when both mandarins are taken.",
+  yourTurn:"Your turn: pick one of your squares.",pickDir:"Now choose a direction.",aiTurn:"Opponent is thinking…",win:"You win!",lose:"You lose.",draw:"Draw.",
+  left:"◀ Left",right:"Right ▶",you:"You",opp:"Opponent",newGame:"New game",refill:"A side ran out — 5 seeds were placed from captured seeds.",
+  caroRules:"Get 5 in a row (horizontal, vertical or diagonal) before the computer does. You are X.",
+  rpsRules:"Best of the classic hand game: rock, paper, scissors.",rock:"Rock",paper:"Paper",scissors:"Scissors",tie:"Tie",rpsWin:"You win this round!",rpsLose:"You lose this round.",score:"Score"},
+ vi:{title:"Trò chơi dân gian",games:["Ô ăn quan","Cờ caro","Oẳn tù tì"],
+  oaqRules:"Trò chơi rải sỏi truyền thống. Bạn có hàng dưới. Chọn một ô, chọn hướng rồi rải từng quân. Sau quân cuối: nếu ô kế có quân thì bốc rải tiếp; nếu ô kế trống mà ô sau có quân thì ăn. Ô quan giá 10. Hết cuộc khi cả hai quan bị ăn.",
+  yourTurn:"Lượt bạn: chọn một ô của mình.",pickDir:"Chọn hướng rải.",aiTurn:"Máy đang nghĩ…",win:"Bạn thắng!",lose:"Bạn thua.",draw:"Hòa.",
+  left:"◀ Trái",right:"Phải ▶",you:"Bạn",opp:"Máy",newGame:"Ván mới",refill:"Một bên hết quân — rải 5 quân lấy từ quân đã ăn.",
+  caroRules:"Xếp 5 quân liên tiếp (ngang, dọc, chéo) trước máy. Bạn là X.",
+  rpsRules:"Trò chơi tay cổ điển: búa, bao, kéo.",rock:"Búa",paper:"Bao",scissors:"Kéo",tie:"Hòa",rpsWin:"Bạn thắng ván này!",rpsLose:"Bạn thua ván này.",score:"Điểm"}
+};
+let lang=localStorage.getItem('lang')||'en',cur=0;
+const $=s=>document.querySelector(s),t=k=>T[lang][k];
+
+/* ---------- Ô ăn quan ---------- */
+const N=12,isQ=i=>i===0||i===6;
+const owner=i=>i>=1&&i<=5?0:i>=7?1:-1;
+let S,sel=null,busy=false,over=false,statusKey='yourTurn';
+function fresh(){const dan=Array(N).fill(5),quan=Array(N).fill(0);dan[0]=dan[6]=0;quan[0]=quan[6]=1;return{dan,quan,score:[0,0]}}
+const cp=s=>({dan:[...s.dan],quan:[...s.quan],score:[...s.score]});
+const full=(s,i)=>s.dan[i]>0||s.quan[i]>0;
+const md=i=>(i+N)%N;
+function sim(s0,pos,d){
+  const s=cp(s0),snaps=[];let hand=s.dan[pos];s.dan[pos]=0;let cur=pos;
+  snaps.push({st:cp(s),hot:cur});
+  for(;;){
+    while(hand>0){cur=md(cur+d);s.dan[cur]++;hand--;snaps.push({st:cp(s),hot:cur});}
+    let nx=md(cur+d);
+    if(full(s,nx)){
+      if(s.quan[nx]||s.dan[nx]===0)break;
+      hand=s.dan[nx];s.dan[nx]=0;cur=nx;snaps.push({st:cp(s),hot:cur});continue;
+    }
+    // next empty: capture chain
+    let n2=md(nx+d),hold=nx;
+    while(!full(s,hold)&&full(s,n2)){
+      s.cap=(s.cap||0)+s.dan[n2]+10*s.quan[n2];
+      s.dan[n2]=0;s.quan[n2]=0;snaps.push({st:cp(s),hot:n2,cap:true});
+      hold=md(n2+d);n2=md(hold+d);
+    }
+    break;
+  }
+  const gained=s.cap||0;delete s.cap;
+  return{snaps,gained,end:s};
+}
+function movesFor(s,p){const r=[];const cells=p===0?[1,2,3,4,5]:[7,8,9,10,11];
+  cells.forEach(c=>{if(s.dan[c]>0){r.push([c,1]);r.push([c,-1]);}});return r}
+function finish(s){ // collect leftovers
+  for(let i=0;i<N;i++){if(!isQ(i)&&s.dan[i]){s.score[owner(i)]+=s.dan[i];s.dan[i]=0;}
+    else if(isQ(i)&&s.dan[i]){s.score[i===0?1:0]+=s.dan[i];s.dan[i]=0;}}
+}
+function ended(s){return !s.quan[0]&&!s.quan[6]}
+function refill(s,p){
+  const cells=p===0?[1,2,3,4,5]:[7,8,9,10,11];
+  if(cells.some(c=>s.dan[c]>0))return 0;
+  if(s.score[p]<5)return -1;
+  s.score[p]-=5;cells.forEach(c=>s.dan[c]=1);return 1;
+}
+function evalMove(s,p,m,depth){
+  const r=sim(s,m[0],m[1]);const ns=r.end;ns.score[p]+=r.gained;
+  let v=ns.score[p]-ns.score[1-p];
+  if(ended(ns)){const f=cp(ns);finish(f);return f.score[p]-f.score[1-p];}
+  if(depth>0){
+    const q=1-p;const t2=cp(ns);const rf=refill(t2,q);
+    if(rf<0){const f=cp(t2);finish(f);return f.score[p]-f.score[q];}
+    const ms=movesFor(t2,q);let best=-1e9;
+    ms.forEach(mm=>{best=Math.max(best,evalMove(t2,q,mm,depth-1));});
+    if(ms.length)v=-best;
+  }
+  return v;
+}
+function aiPick(){
+  const ms=movesFor(S,1);let best=-1e9,bm=ms[0];
+  ms.forEach(m=>{const v=evalMove(S,1,m,1)+Math.random()*.3;if(v>best){best=v;bm=m;}});return bm;
+}
+function renderOaq(hot=-1){
+  const box=$('#oaqboard');box.innerHTML='';
+  // layout: bottom row 1..5, top row 11..7 (left→right), q0 left, q6 right
+  const place=(i,cls,style)=>{
+    const d=document.createElement('div');d.className='oc '+cls+(isQ(i)?' q q'+i:'')+(hot===i?' hot':'')+(sel===i?' sel':'');
+    const n=S.dan[i]+10*S.quan[i];
+    d.innerHTML=(S.quan[i]?'<span class="m">★</span>':'')+'<span class="n">'+S.dan[i]+'</span>';
+    if(style)d.style=style;
+    if(owner(i)===0&&!busy&&!over&&S.dan[i]>0&&turn===0){d.classList.add('mine');d.onclick=()=>{sel=i;statusKey='pickDir';renderOaq();updateOaq();};}
+    return d;
+  };
+  const frag=[];
+  box.appendChild(place(0,''));
+  [11,10,9,8,7].forEach((i,k)=>{const d=place(i,'');d.style.gridColumn=k+2;d.style.gridRow=1;box.appendChild(d)});
+  [1,2,3,4,5].forEach((i,k)=>{const d=place(i,'');d.style.gridColumn=k+2;d.style.gridRow=2;box.appendChild(d)});
+  box.appendChild(place(6,''));
+  $('#sc').textContent=t('you')+': '+S.score[0]+'   |   '+t('opp')+': '+S.score[1];
+  $('#dirs').style.visibility=sel!=null&&!busy&&!over?'visible':'hidden';
+}
+let turn=0,extraMsg='';
+function updateOaq(){
+  $('#st').textContent=over?(S.score[0]>S.score[1]?t('win'):S.score[0]<S.score[1]?t('lose'):t('draw')):(extraMsg?extraMsg+' ':'')+t(statusKey);
+}
+function animate(snaps,p,gained,done){
+  let i=0;busy=true;
+  const tick=()=>{
+    if(i>=snaps.length){busy=false;done();return;}
+    const f=snaps[i++];S=f.st;S.score=[...S.score];renderOaq(f.hot);setTimeout(tick,f.cap?350:200);
+  };tick();
+}
+function play(p,pos,d){
+  sel=null;
+  const r=sim(S,pos,d);
+  const base=[...S.score];
+  r.end.score=[...base];r.end.score[p]+=r.gained;
+  r.snaps.forEach(f=>{f.st.score=[...base]});
+  r.snaps[r.snaps.length-1].st.score=[...r.end.score];
+  animate(r.snaps,p,r.gained,()=>{
+    S=r.end;
+    if(ended(S)){finish(S);over=true;renderOaq();updateOaq();return;}
+    next(1-p);
+  });
+}
+function next(p){
+  turn=p;extraMsg='';
+  const rf=refill(S,p);
+  if(rf<0){finish(S);over=true;renderOaq();updateOaq();return;}
+  if(rf>0)extraMsg=t('refill');
+  if(p===0){statusKey='yourTurn';renderOaq();updateOaq();}
+  else{statusKey='aiTurn';renderOaq();updateOaq();
+    setTimeout(()=>{const m=aiPick();if(!m){finish(S);over=true;renderOaq();updateOaq();return;}play(1,m[0],m[1]);},600);}
+}
+function startOaq(){S=fresh();sel=null;busy=false;over=false;turn=0;extraMsg='';statusKey='yourTurn';renderOaq();updateOaq();}
+function buildOaq(){
+  $('#g-oaq').innerHTML=`<h2>${t('games')[0]}</h2><p class="rules">${t('oaqRules')}</p>
+   <div class="status" id="st"></div><div id="sc"></div><div id="oaq"><span id="oaqboard" style="display:contents"></span></div>
+   <div class="dir" id="dirs" style="visibility:hidden"><button id="dl">${t('left')}</button><button id="dr">${t('right')}</button></div>
+   <p><button id="new1" class="primary">${t('newGame')}</button></p>`;
+  $('#dl').onclick=()=>sel!=null&&play(0,sel,-1);
+  $('#dr').onclick=()=>sel!=null&&play(0,sel,1);
+  $('#new1').onclick=startOaq;
+  startOaq();
+}
+
+/* ---------- Cờ caro ---------- */
+const CN=15;let board,cOver,cLast;
+function lineLen(b,r,c,dr,dc,v){let n=0;while(r>=0&&c>=0&&r<CN&&c<CN&&b[r][c]===v){n++;r+=dr;c+=dc}return n}
+function won(b,r,c){const v=b[r][c];return[[0,1],[1,0],[1,1],[1,-1]].some(([dr,dc])=>lineLen(b,r+dr,c+dc,dr,dc,v)+lineLen(b,r-dr,c-dc,-dr,-dc,v)+1>=5)}
+function cellScore(b,r,c,v){
+  let s=0;
+  [[0,1],[1,0],[1,1],[1,-1]].forEach(([dr,dc])=>{
+    let n=1,open=0;
+    for(const k of[1,-1]){let rr=r+dr*k,cc=c+dc*k;while(rr>=0&&cc>=0&&rr<CN&&cc<CN&&b[rr][cc]===v){n++;rr+=dr*k;cc+=dc*k}
+      if(rr>=0&&cc>=0&&rr<CN&&cc<CN&&b[rr][cc]===0)open++;}
+    if(n>=5)s+=100000;else s+=[0,1,10,100,1500][n]*(open===2?2:open===1?1:0.1);
+  });return s;
+}
+function caroAI(){
+  let best=-1,bm=null;
+  for(let r=0;r<CN;r++)for(let c=0;c<CN;c++){
+    if(board[r][c])continue;
+    let near=false;for(let a=-2;a<=2&&!near;a++)for(let d=-2;d<=2;d++){const rr=r+a,cc=c+d;if(rr>=0&&cc>=0&&rr<CN&&cc<CN&&board[rr][cc]){near=true;break}}
+    if(!near)continue;
+    const v=cellScore(board,r,c,2)*1.1+cellScore(board,r,c,1)+Math.random();
+    if(v>best){best=v;bm=[r,c]}
+  }
+  return bm||[7,7];
+}
+function renderCaro(){
+  const g=$('#caro');g.style.gridTemplateColumns=`repeat(${CN},1fr)`;g.innerHTML='';
+  for(let r=0;r<CN;r++)for(let c=0;c<CN;c++){
+    const b=document.createElement('button'),v=board[r][c];
+    b.textContent=v===1?'X':v===2?'O':'';b.className=(v===1?'x':v===2?'o':'')+(cLast&&cLast[0]===r&&cLast[1]===c?' last':'');
+    b.onclick=()=>caroClick(r,c);g.appendChild(b);
+  }
+}
+function caroClick(r,c){
+  if(cOver||board[r][c])return;
+  board[r][c]=1;cLast=[r,c];
+  if(won(board,r,c)){cOver=true;$('#cst').textContent=t('win');renderCaro();return}
+  const [a,b]=caroAI();board[a][b]=2;cLast=[a,b];
+  if(won(board,a,b)){cOver=true;$('#cst').textContent=t('lose')}
+  else if(board.every(row=>row.every(x=>x))){cOver=true;$('#cst').textContent=t('draw')}
+  renderCaro();
+}
+function startCaro(){board=Array.from({length:CN},()=>Array(CN).fill(0));cOver=false;cLast=null;$('#cst').textContent='';renderCaro()}
+function buildCaro(){
+  $('#g-caro').innerHTML=`<h2>${t('games')[1]}</h2><p class="rules">${t('caroRules')}</p><div class="status" id="cst"></div><div id="caro"></div><p><button id="new2" class="primary">${t('newGame')}</button></p>`;
+  $('#new2').onclick=startCaro;startCaro();
+}
+
+/* ---------- Oẳn tù tì ---------- */
+let rs=[0,0];
+function buildRps(){
+  const E=['✊','✋','✌️'],K=['rock','paper','scissors'];
+  $('#g-rps').innerHTML=`<h2>${t('games')[2]}</h2><p class="rules">${t('rpsRules')}</p>
+   <div class="big" id="rv">❔ vs ❔</div><div class="status" id="rst" style="text-align:center"></div>
+   <div class="rps">${E.map((e,i)=>`<button data-i="${i}" title="${t(K[i])}">${e}</button>`).join('')}</div>
+   <div style="text-align:center">${t('score')}: <b id="rsc"></b></div>`;
+  const upd=()=>$('#rsc').textContent=`${t('you')} ${rs[0]} - ${rs[1]} ${t('opp')}`;upd();
+  document.querySelectorAll('#g-rps .rps button').forEach(b=>b.onclick=()=>{
+    const me=+b.dataset.i,ai=Math.floor(Math.random()*3);
+    $('#rv').textContent=E[me]+' vs '+E[ai];
+    if(me===ai)$('#rst').textContent=t('tie');
+    const winMe=(me===0&&ai===2)||(me===1&&ai===0)||(me===2&&ai===1);
+    if(me!==ai){if(winMe){rs[0]++;$('#rst').textContent=t('rpsWin')}else{rs[1]++;$('#rst').textContent=t('rpsLose')}}
+    upd();
+  });
+}
+
+/* ---------- shell ---------- */
+function show(i){cur=i;['oaq','caro','rps'].forEach((k,j)=>$('#g-'+k).hidden=j!==i);
+  [...$('#nav').children].forEach((b,j)=>b.classList.toggle('on',j===i))}
+function build(){
+  document.documentElement.lang=lang;
+  $('#title').textContent=t('title');$('#lang').textContent=lang==='en'?'Tiếng Việt':'English';
+  $('#nav').innerHTML='';t('games').forEach((g,i)=>{const b=document.createElement('button');b.textContent=g;b.onclick=()=>show(i);$('#nav').appendChild(b)});
+  buildOaq();buildCaro();buildRps();show(cur);
+}
+$('#lang').onclick=()=>{lang=lang==='en'?'vi':'en';try{localStorage.setItem('lang',lang)}catch(e){}build()};
+build();
+</script>
+</body>
+</html>
